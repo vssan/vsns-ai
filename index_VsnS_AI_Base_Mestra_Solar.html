@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VsnS AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#f4f7fb;color:#172033;font-family:Arial,sans-serif;display:flex;justify-content:center;padding:18px}
+.app{width:min(980px,100%);background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(0,0,0,.10);padding:28px}
+.brand{text-align:center}.brand h1{margin:0;font-size:42px;letter-spacing:1px}.brand p{margin:6px 0 10px;color:#667085}
+.badge{display:inline-block;background:#eef2ff;color:#2848c7;padding:6px 12px;border-radius:20px;font-size:13px}
+.welcome{text-align:center;font-size:21px;margin:22px 0}
+.chat{height:500px;overflow:auto;border:1px solid #e1e6ef;border-radius:16px;padding:18px;background:#fafbfd}
+.msg{margin:0 0 18px;line-height:1.55}.you{font-weight:700}.ai{font-weight:700}
+.input-row{display:flex;gap:10px;margin-top:14px}
+input{flex:1;padding:15px 16px;border:1px solid #ccd3df;border-radius:14px;font-size:16px;outline:none}
+button{border:0;border-radius:14px;padding:0 24px;font-size:16px;cursor:pointer;background:#172033;color:white}
+button:hover{opacity:.9}
+.footer{text-align:center;color:#98a2b3;font-size:12px;margin-top:16px}
+.example{color:#667085;font-size:13px;text-align:center;margin-top:10px}
+h3{margin:12px 0 6px} ul{margin-top:6px}
+@media(max-width:650px){.app{padding:18px}.brand h1{font-size:34px}.chat{height:58vh}.input-row{flex-direction:column}button{height:48px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand">
+    <h1>VsnS AI</h1>
+    <p>Seu assistente inteligente</p>
+    <span class="badge">Base mestra inicial — Energia Solar & Fotovoltaica</span>
+  </div>
+
+  <div class="welcome">Olá! Eu sou a VsnS AI. Como posso ajudar?</div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="input-row">
+    <input id="question" placeholder="Digite sua pergunta..." autocomplete="off">
+    <button onclick="send()">Enviar</button>
+  </div>
+  <div class="example">Ex.: “Tenho 12 meses de consumo. Quero dimensionar um sistema de 650 kWh/mês.”</div>
+  <div class="footer">Protótipo VsnS AI — base técnica inicial. Projetos reais devem ser conferidos com dados locais, fabricantes, normas e requisitos da distribuidora.</div>
+</div>
+
+<script>
+/*
+ VsnS AI — Base mestra inicial de conhecimento solar/fotovoltaico.
+ Esta versão é um protótipo local: não consulta internet nem um modelo de IA.
+ O objetivo é organizar conhecimento, perguntas, cálculos e respostas para
+ depois conectarmos a um motor de IA real.
+*/
+
+const knowledge = {
+  "dimensionamento": `
+    <h3>Dimensionamento fotovoltaico</h3>
+    <p>O dimensionamento começa pelo consumo e pelas características do local. Não é correto escolher a quantidade de módulos apenas olhando um único mês.</p>
+    <ul>
+      <li>Levantar os últimos 12 meses de consumo em kWh.</li>
+      <li>Calcular média mensal e observar meses fora do padrão.</li>
+      <li>Identificar sazonalidade, aumento ou redução futura de carga.</li>
+      <li>Definir objetivo: compensação de energia, geração parcial, autonomia, backup ou expansão.</li>
+      <li>Obter irradiação/HSP do local e considerar orientação, inclinação, temperatura e sombras.</li>
+      <li>Considerar perdas do sistema e características reais dos equipamentos.</li>
+      <li>Definir potência DC dos módulos e potência AC do inversor.</li>
+      <li>Verificar strings, MPPT, tensão máxima, faixa MPPT e correntes admissíveis.</li>
+    </ul>
+    <p>Para um projeto real, a VsnS deve pedir os dados que estiverem faltando antes de fechar um dimensionamento.</p>`,
+
+  "media": `
+    <h3>Média de consumo</h3>
+    <p>Com 12 meses, some os consumos e divida por 12. A média é uma referência, mas não deve ser usada isoladamente.</p>
+    <p>Exemplo: 600 + 500 + 550 + ... + 650 kWh ÷ 12 = média mensal.</p>
+    <p>Depois compare a média com os meses de maior consumo e investigue mudanças de carga.</p>`,
+
+  "modulo": `
+    <h3>Quantidade de módulos</h3>
+    <p>Uma aproximação inicial pode ser feita pela energia mensal necessária, HSP e rendimento global:</p>
+    <p><b>Potência FV aproximada = Energia diária ÷ (HSP × rendimento global)</b>.</p>
+    <p>Depois: quantidade de módulos = potência FV desejada ÷ potência do módulo. O resultado deve ser arredondado e validado pelo arranjo elétrico, área, inversor e condições locais.</p>`,
+
+  "inversor": `
+    <h3>Inversor</h3>
+    <p>O inversor deve ser escolhido considerando potência AC, tensão da rede, número de MPPTs, faixa de tensão MPPT, tensão DC máxima, corrente máxima por entrada e características dos módulos.</p>
+    <p>A relação entre potência DC dos módulos e potência AC do inversor deve ser analisada conforme o projeto e as condições de operação. Não existe uma única relação correta para todos os casos.</p>`,
+
+  "string": `
+    <h3>Strings e MPPT</h3>
+    <p>Para definir uma string é necessário conhecer Voc, Vmp, Isc e Imp do módulo, quantidade de módulos em série, temperatura mínima/máxima e limites do inversor.</p>
+    <p>É necessário verificar simultaneamente: tensão máxima de circuito aberto, faixa de rastreamento MPPT e corrente admissível. Strings em paralelo também exigem verificação de corrente e proteção.</p>`,
+
+  "sombr": `
+    <h3>Sombreamento</h3>
+    <p>Sombras podem reduzir a geração e, dependendo da configuração, afetar um conjunto de módulos. Devem ser avaliadas árvores, prédios, caixas d’água, chaminés, platibandas, antenas e outras estruturas.</p>
+    <p>O estudo deve considerar a trajetória solar e não apenas a sombra observada em um horário.</p>`,
+
+  "telhado": `
+    <h3>Telhado, orientação e inclinação</h3>
+    <p>Orientação, azimute, inclinação, área disponível e obstáculos influenciam a geração. No Brasil, superfícies voltadas ao norte costumam ser uma referência para maximizar a produção anual, mas outras orientações podem ser viáveis.</p>
+    <p>Também devem ser analisados tipo de telha, estrutura, acesso, segurança, fixação, vento e integridade do telhado.</p>`,
+
+  "perda": `
+    <h3>Perdas</h3>
+    <p>Um estudo fotovoltaico deve considerar perdas por temperatura, sujeira, mismatch, cabos, conversão, disponibilidade, sombreamento, orientação/inclinação e demais fatores aplicáveis.</p>
+    <p>Evite usar um percentual único como verdade universal: o valor depende do sistema.</p>`,
+
+  "cabo": `
+    <h3>Cabos e queda de tensão</h3>
+    <p>O dimensionamento depende de corrente, comprimento, método de instalação, temperatura, agrupamento, material e limites admissíveis de queda de tensão.</p>
+    <p>No lado CC e no lado CA devem ser considerados os requisitos elétricos e de instalação aplicáveis.</p>`,
+
+  "protec": `
+    <h3>Proteções</h3>
+    <p>O projeto pode envolver disjuntores, fusíveis quando aplicáveis, DPS, seccionamento, aterramento, equipotencialização e demais proteções necessárias.</p>
+    <p>A seleção depende da arquitetura do sistema, níveis de tensão, correntes de curto-circuito, equipamentos e requisitos normativos/distribuidora.</p>`,
+
+  "bateria": `
+    <h3>Baterias e sistemas híbridos</h3>
+    <p>Para dimensionar bateria é necessário definir carga, potência simultânea, energia diária, tempo de autonomia desejado, profundidade de descarga, eficiência, tensão do banco e características do fabricante.</p>
+    <p>Uma aproximação conceitual é: energia útil necessária = potência/consumo da carga × tempo de autonomia. Depois devem ser consideradas eficiência e profundidade de descarga.</p>`,
+
+  "hibrido": `
+    <h3>Sistema híbrido</h3>
+    <p>Um sistema híbrido combina geração fotovoltaica, rede e armazenamento conforme a arquitetura escolhida. É preciso definir quais cargas terão backup, potência de pico, autonomia, estratégia de carregamento e comportamento em falta de rede.</p>`,
+
+  "offgrid": `
+    <h3>Off-grid</h3>
+    <p>Em sistema isolado da rede, o dimensionamento precisa considerar consumo diário, picos de potência, autonomia, recurso solar, perdas e armazenamento. O banco de baterias deixa de ser apenas uma opção e passa a ser parte central do sistema.</p>`,
+
+  "micro": `
+    <h3>Microinversores</h3>
+    <p>Microinversores trabalham próximos aos módulos e podem ser interessantes em situações com diferentes orientações, sombreamento parcial, modularidade ou limitações de strings. A escolha deve considerar potência, corrente, tensão, quantidade de módulos e características da rede.</p>`,
+
+  "homolog": `
+    <h3>Homologação</h3>
+    <p>O processo depende da distribuidora e da configuração do sistema. Normalmente envolve documentação técnica, diagrama, dados dos equipamentos, padrão de entrada e demais documentos solicitados.</p>
+    <p>As regras e exigências podem mudar. Para uma entrada real, a VsnS deve trabalhar com a distribuidora e a documentação vigente.</p>`,
+
+  "conta": `
+    <h3>Leitura da conta de energia</h3>
+    <p>Não basta olhar apenas o valor em reais. Para dimensionar, precisamos identificar consumo em kWh, período, classe/tensão, modalidade tarifária quando aplicável, demanda quando aplicável, componentes tarifários e informações específicas da unidade consumidora.</p>`,
+
+  "tarifa": `
+    <h3>Tarifas e compensação</h3>
+    <p>A análise econômica depende da tarifa, modalidade de consumo, regras de compensação, custos fixos e características da unidade. Não se deve prometer uma economia fixa sem analisar a conta e as regras aplicáveis.</p>`,
+
+  "economia": `
+    <h3>Economia e retorno</h3>
+    <p>Para estimar economia, precisamos relacionar geração esperada, energia compensável, tarifa, custos fixos, degradação, manutenção e condições do contrato/projeto. Payback e retorno são estimativas, não garantias.</p>`,
+
+  "instalacao": `
+    <h3>Instalação</h3>
+    <p>Uma boa instalação considera estrutura, fixação, acesso, segurança, organização dos cabos, conectores, polaridade, proteção, aterramento, ventilação dos equipamentos, identificação e acabamento.</p>`,
+
+  "vistoria": `
+    <h3>Vistoria</h3>
+    <p>Na vistoria, registrar consumo, padrão, telhado, orientação, inclinação, área, obstáculos, sombras, quadro elétrico, distância entre equipamentos, rota de cabos, estrutura e fotos. Quanto melhor o levantamento, melhor o projeto.</p>`,
+
+  "expans": `
+    <h3>Expansão</h3>
+    <p>Antes de ampliar um sistema, verificar potência já instalada, inversor, entradas MPPT, corrente/tensão, espaço físico, estrutura, homologação existente e possibilidade técnica de ampliação.</p>`,
+
+  "carro": `
+    <h3>Carregador de veículo elétrico</h3>
+    <p>Um carregador de veículo elétrico altera o perfil de consumo. Deve-se levantar potência do carregador, horas de uso e frequência. Se a carga for futura, ela pode ser incluída no dimensionamento.</p>`,
+
+  "ar": `
+    <h3>Ar-condicionado e novas cargas</h3>
+    <p>Equipamentos como ar-condicionado, chuveiro elétrico, bomba, aquecedor, forno, piscina e carregador de veículo podem alterar bastante o consumo. O ideal é estimar o uso futuro em kWh antes de fechar o sistema.</p>`,
+
+  "norma": `
+    <h3>Normas e segurança</h3>
+    <p>Projetos reais precisam respeitar as normas técnicas aplicáveis, requisitos da distribuidora, especificações dos fabricantes e regras de segurança. A VsnS deve tratar normas como fonte de requisitos, não como substituta de projeto assinado quando este for exigido.</p>`,
+
+  "check": `
+    <h3>Checklist de dimensionamento</h3>
+    <ul>
+      <li>12 meses de consumo</li><li>Localização</li><li>Tipo de rede</li><li>Tarifa/modalidade</li>
+      <li>Orientação e inclinação</li><li>Área útil</li><li>Sombreamento</li><li>Estrutura do telhado</li>
+      <li>Módulo pretendido</li><li>Inversor pretendido</li><li>Expansão futura</li><li>Objetivo do cliente</li>
+      <li>Proteções</li><li>Cabos e distâncias</li><li>Requisitos da distribuidora</li>
+    </ul>`,
+
+  "solar": `
+    <h3>Base Solar/Fotovoltaica</h3>
+    <p>Posso trabalhar com dimensionamento, geração, módulos, inversores, strings, MPPT, baterias, sistemas on-grid/off-grid/híbridos, telhados, sombreamento, cabos, proteções, homologação, análise de conta, economia, instalação, vistoria e expansão.</p>
+    <p>Para chegar a uma resposta técnica, vou primeiro identificar quais dados você forneceu e quais ainda faltam.</p>`
+};
+
+function add(role,text){
+  const div=document.createElement("div");
+  div.className="msg";
+  div.innerHTML=`<div class="${role==='Você'?'you':'ai'}">${role}:</div>${text}`;
+  document.getElementById("chat").appendChild(div);
+  const chat=document.getElementById("chat");
+  chat.scrollTop=chat.scrollHeight;
+}
+
+function normalize(s){
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function findAnswer(q){
+  const n=normalize(q);
+
+  // Cálculo simples de média se o usuário fornecer vários números em kWh.
+  const nums=[...n.matchAll(/(\d+(?:[.,]\d+)?)\s*kwh/g)].map(x=>parseFloat(x[1].replace(",",".")));
+  if(nums.length>=2 && (n.includes("media")||n.includes("media mensal"))){
+    const avg=nums.reduce((a,b)=>a+b,0)/nums.length;
+    return `<h3>Média calculada</h3><p>Encontrei ${nums.length} valores em kWh. A média simples é <b>${avg.toFixed(2)} kWh/mês</b>.</p><p>Isso é uma referência inicial. Para dimensionar, também precisamos verificar sazonalidade, crescimento futuro, tarifa e características do local.</p>`;
+  }
+
+  const groups=[
+    ["dimensionamento",["dimensionar","dimensionamento","tamanho do sistema","quantos modulos","quantas placas","potencia do sistema"]],
+    ["media",["media","consumo medio","12 meses","historico"]],
+    ["modulo",["modulo","modulos","placa","placas"]],
+    ["inversor",["inversor","inversores"]],
+    ["string",["string","strings","mppt","voc","vmp","isc","imp"]],
+    ["sombr",["sombra","sombras","sombreamento"]],
+    ["telhado",["telhado","inclinacao","orientacao","azimute","oeste","leste","norte","sul"]],
+    ["perda",["perda","perdas","performance ratio"]],
+    ["cabo",["cabo","cabos","queda de tensao"]],
+    ["protec",["dps","disjuntor","fusivel","protecao","aterramento"]],
+    ["bateria",["bateria","baterias","autonomia","backup"]],
+    ["hibrido",["hibrido","hybrid"]],
+    ["offgrid",["off grid","off-grid","isolado"]],
+    ["micro",["microinversor","micro inversor"]],
+    ["homolog",["homologacao","homologar","distribuidora"]],
+    ["conta",["conta de luz","conta de energia","fatura","kwh da conta"]],
+    ["tarifa",["tarifa","compensacao","credito de energia"]],
+    ["economia",["economia","payback","retorno","investimento"]],
+    ["instalacao",["instalacao","instalar","instalador"]],
+    ["vistoria",["vistoria","visita tecnica","levantamento"]],
+    ["expans",["expandir","expansao","ampliar","ampliacao"]],
+    ["carro",["carro eletrico","veiculo eletrico","wallbox","carregador"]],
+    ["ar",["ar condicionado","chuveiro","bomba","piscina","forno"]],
+    ["norma",["norma","normas","nrb","nbr"]],
+    ["check",["checklist","o que preciso","dados necessarios"]],
+    ["solar",["solar","fotovoltaico","fotovoltaica","energia solar"]]
+  ];
+  for(const [key,terms] of groups){
+    if(terms.some(t=>n.includes(t))) return knowledge[key];
+  }
+
+  return `<p>Essa pergunta ainda não está mapeada na base de regras do protótipo.</p>
+  <p>Experimente perguntar sobre <b>dimensionamento, consumo, módulos, inversores, strings, MPPT, sombreamento, telhado, perdas, cabos, proteções, baterias, híbrido, off-grid, homologação, conta de energia, economia, instalação ou vistoria</b>.</p>
+  <p>Quando conectarmos um motor de IA real, essa limitação deixa de existir e esta base passa a funcionar como conhecimento especializado.</p>`;
+}
+
+function send(){
+  const input=document.getElementById("question");
+  const q=input.value.trim();
+  if(!q)return;
+  add("Você",escapeHtml(q));
+  input.value="";
+  setTimeout(()=>add("VsnS AI",findAnswer(q)),120);
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+document.getElementById("question").addEventListener("keydown",e=>{if(e.key==="Enter")send();});
+
+add("VsnS AI",`<p>👋 Minha <b>base mestra inicial de Energia Solar e Fotovoltaica</b> está carregada.</p>
+<p>Agora você pode testar perguntas sobre dimensionamento, módulos, inversores, strings, MPPT, telhados, sombreamento, baterias, homologação, economia, instalação e muito mais.</p>
+<p><b>Importante:</b> esta ainda é a fase de construção do conhecimento. Vamos usar suas correções para transformar a VsnS em uma assistente técnica cada vez mais completa.</p>`);
+</script>
+</body>
+</html>
