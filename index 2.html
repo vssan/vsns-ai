@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VsnS AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#172033;font-family:Arial,Helvetica,sans-serif}
+.app{width:min(900px,94vw);margin:24px auto;background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(0,0,0,.10);padding:26px}
+.brand{text-align:center}.brand h1{margin:0;font-size:46px;letter-spacing:1px}.brand .ai{font-weight:400}.brand p{margin:6px 0;color:#667085}
+.badge{display:inline-block;margin-top:7px;padding:5px 10px;border-radius:20px;background:#eef2ff;color:#3b4cca;font-size:12px}
+.welcome{text-align:center;font-size:20px;margin:22px 0}
+.chat{height:480px;overflow:auto;border:1px solid #e1e6ef;border-radius:16px;padding:18px;background:#fafbfc}
+.msg{margin:0 0 15px;line-height:1.55}.you{font-weight:700}.ai{font-weight:700}
+.input-row{display:flex;gap:10px;margin-top:14px}
+input{flex:1;padding:15px 16px;border:1px solid #ccd3df;border-radius:14px;font-size:16px;outline:none}
+input:focus{border-color:#667eea}
+button{border:0;border-radius:14px;padding:0 22px;background:#172033;color:#fff;font-size:16px;cursor:pointer}
+button:hover{opacity:.9}
+.help{margin-top:14px;color:#667085;font-size:13px;text-align:center}
+.footer{text-align:center;color:#98a2b3;font-size:11px;margin-top:14px}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="brand">
+    <h1>VsnS <span class="ai">AI</span></h1>
+    <p>Seu assistente inteligente</p>
+    <span class="badge">Cérebro VsnS conectado</span>
+  </div>
+
+  <div class="welcome">Olá! Eu sou a VsnS AI. Como posso ajudar?</div>
+
+  <div class="chat" id="chat">
+    <p class="msg">👋 Meu cérebro inicial está carregado.</p>
+    <p class="msg">Pode conversar comigo de forma normal. Se você quiser começar um projeto de energia solar, vou primeiro entender o que você precisa e pedir somente os dados que faltarem.</p>
+  </div>
+
+  <div class="input-row">
+    <input id="message" type="text" placeholder="Digite sua pergunta..." autocomplete="off">
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+
+  <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <label for="fileInput" style="display:inline-block;padding:11px 15px;border:1px solid #ccd3df;border-radius:12px;background:#fff;cursor:pointer;font-size:14px">
+      📎 Anexar conta de energia
+    </label>
+    <input id="fileInput" type="file" accept="image/*,.pdf,application/pdf" style="display:none">
+    <span id="fileStatus" style="font-size:13px;color:#667085"></span>
+  </div>
+
+  <div class="help">Você pode anexar uma foto ou PDF da conta de energia. Nesta etapa, o arquivo é apenas selecionado; a leitura automática será conectada na próxima etapa.</div>
+  <div class="footer">Protótipo VsnS AI — primeira etapa do cérebro. Cálculos reais devem ser conferidos com dados do local, fabricantes, normas e requisitos da distribuidora.</div>
+</main>
+
+<!-- O cérebro fica separado do index -->
+<script src="./vsns-brain.js"></script>
+
+<script>
+const state = {
+  solarIntent: false,
+  collected: {
+    bill: false,
+    roof: false,
+    address: false
+  }
+};
+
+function normalize(text){
+  return text.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .trim();
+}
+
+function esc(text){
+  const d=document.createElement("div");
+  d.textContent=text;
+  return d.innerHTML;
+}
+
+function hasAny(text, terms){
+  return terms.some(term => text.includes(normalize(term)));
+}
+
+/*
+ * Reconhece a intenção de energia solar mesmo quando o usuário
+ * não usa exatamente as mesmas palavras do cérebro.
+ */
+function detectsSolarInterest(text){
+  const q = normalize(text);
+
+  const direct = [
+    "energia solar",
+    "sistema solar",
+    "sistema fotovoltaico",
+    "energia fotovoltaica",
+    "placas solares",
+    "placa solar",
+    "paineis solares",
+    "painel solar",
+    "colocar placas",
+    "colocar placa",
+    "fazer um sistema",
+    "comprar energia solar",
+    "comprar solar",
+    "orcamento solar",
+    "orçamento solar",
+    "projeto solar"
+  ];
+
+  const start = [
+    "por onde comeco",
+    "por onde começo",
+    "como comeco",
+    "como começo",
+    "nao sei por onde",
+    "não sei por onde",
+    "quero saber como",
+    "estou pensando em colocar"
+  ];
+
+  return hasAny(q, direct) || (hasAny(q, ["solar","fotovoltaico","fotovoltaica"]) && hasAny(q,start));
+}
+
+function solarFirstResponse(){
+  const missing = [];
+  if(!state.collected.bill) missing.push("a conta de energia em PDF ou uma foto nítida");
+  if(!state.collected.roof) missing.push("o tipo de telhado");
+  if(!state.collected.address) missing.push("o endereço do imóvel");
+
+  if(missing.length === 0){
+    return "Perfeito. Já tenho as informações iniciais. Agora posso seguir para a análise do consumo e do dimensionamento.";
+  }
+
+  return "Claro. Eu vou te ajudar desde o começo, sem precisar conhecer termos técnicos. " +
+    "Para iniciar, preciso de " + missing.join(", ") + ". " +
+    "Não precisa me passar latitude ou longitude: eu obtenho isso automaticamente pelo endereço.";
+}
+
+function answer(text){
+  const q = normalize(text);
+
+  if(detectsSolarInterest(q)){
+    state.solarIntent = true;
+    return solarFirstResponse();
+  }
+
+  if(state.solarIntent){
+    if(hasAny(q, ["telhado","ceramico","colonial","fibrocimento","zinco"])){
+      state.collected.roof = true;
+      return solarFirstResponse();
+    }
+
+    if(hasAny(q, ["rua ","avenida ","av. ","numero ","nº ","bairro ","tatuí","tatui","sao paulo","sp "])){
+      state.collected.address = true;
+      return solarFirstResponse();
+    }
+
+    if(hasAny(q, ["conta de energia","fatura","fatura de energia","conta de luz","12 meses","consumo"])){
+      state.collected.bill = true;
+      return solarFirstResponse();
+    }
+  }
+
+  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro"])){
+    return "Sim. Meu cérebro inicial está conectado ao site. Ele contém as regras da primeira etapa do VsnS, incluindo a forma de reconhecer a intenção de começar com energia solar e a sequência inicial de coleta de dados.";
+  }
+
+  return "Entendi. Pode me explicar com suas palavras o que você precisa. Se for sobre começar um projeto de energia solar, eu vou identificar a intenção e conduzir a conversa passo a passo.";
+}
+
+function sendMessage(){
+  const input=document.getElementById("message");
+  const chat=document.getElementById("chat");
+  const text=input.value.trim();
+  if(!text)return;
+
+  chat.innerHTML += `<p class="msg"><span class="you">Você:</span> ${esc(text)}</p>`;
+  chat.innerHTML += `<p class="msg"><span class="ai">VsnS AI:</span> ${esc(answer(text))}</p>`;
+
+  input.value="";
+  input.focus();
+  chat.scrollTop=chat.scrollHeight;
+}
+
+document.getElementById("message").addEventListener("keydown",e=>{
+  if(e.key==="Enter")sendMessage();
+});
+
+document.getElementById("fileInput").addEventListener("change", function(){
+  const status = document.getElementById("fileStatus");
+  const file = this.files && this.files[0];
+
+  if(!file){
+    status.textContent = "";
+    return;
+  }
+
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const isImage = file.type.startsWith("image/");
+
+  if(!isPdf && !isImage){
+    status.textContent = "Formato não suportado. Use uma foto ou PDF.";
+    this.value = "";
+    return;
+  }
+
+  status.textContent = "Arquivo selecionado: " + file.name;
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML += `<p class="msg"><span class="ai">VsnS AI:</span> Recebi o arquivo <b>${esc(file.name)}</b>. A leitura automática da conta será a próxima etapa.</p>`;
+  chat.scrollTop = chat.scrollHeight;
+});
+</script>
+</body>
+</html>
