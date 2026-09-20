@@ -27,149 +27,43 @@ button:hover{opacity:.9}
   <div class="brand">
     <h1>VsnS <span class="ai">AI</span></h1>
     <p>Seu assistente inteligente</p>
-    <span class="badge">Base inicial completa de dimensionamento fotovoltaico</span>
+    <span class="badge">Cérebro VsnS conectado</span>
   </div>
 
   <div class="welcome">Olá! Eu sou a VsnS AI. Como posso ajudar?</div>
 
   <div class="chat" id="chat">
-    <p class="msg">👋 Minha base de dimensionamento fotovoltaico está carregada.</p>
-    <p class="msg">Você pode perguntar sobre consumo, média de 12 meses, módulos, inversores, strings, MPPT, HSP, perdas, sombreamento, telhado, cabos, proteções, baterias, homologação e muito mais.</p>
+    <p class="msg">👋 Meu cérebro inicial está carregado.</p>
+    <p class="msg">Pode conversar comigo de forma normal. Se você quiser começar um projeto de energia solar, vou primeiro entender o que você precisa e pedir somente os dados que faltarem.</p>
   </div>
 
   <div class="input-row">
     <input id="message" type="text" placeholder="Digite sua pergunta..." autocomplete="off">
     <button onclick="sendMessage()">Enviar</button>
   </div>
-  <div class="help">Exemplo: “Tenho os consumos dos últimos 12 meses. Como começo o dimensionamento?”</div>
-  <div class="footer">Protótipo V3 — conhecimento técnico inicial. Cálculos reais devem ser conferidos com dados do local, fabricantes, normas e requisitos da distribuidora.</div>
+
+  <div class="help">Exemplo: “Quero colocar energia solar, mas não sei por onde começar.”</div>
+  <div class="footer">Protótipo VsnS AI — primeira etapa do cérebro. Cálculos reais devem ser conferidos com dados do local, fabricantes, normas e requisitos da distribuidora.</div>
 </main>
 
+<!-- O cérebro fica separado do index -->
+<script src="./vsns-brain.js"></script>
+
 <script>
-const KB = [
-{keys:["dimensionar","dimensionamento","dimensionamento solar","dimensionamento fotovoltaico","como dimensionar","projeto solar","projeto fotovoltaico"],
-answer:`Para dimensionar um sistema fotovoltaico, a VsnS deve seguir uma sequência e não simplesmente informar uma quantidade de módulos. Primeiro coleta os dados da unidade: localização, histórico de consumo, modalidade e características da instalação. Depois calcula o consumo de referência, avalia a irradiação/HSP, perdas e objetivo do sistema. A partir daí dimensiona potência FV, módulos, inversor(es), strings/MPPTs, área, cabos, proteções e, quando aplicável, baterias. Por fim, valida as condições elétricas, estruturais e os requisitos da distribuidora.`},
-
-{keys:["por onde começar","começar o dimensionamento","inicio do dimensionamento","primeiro passo","dados necessários"],
-answer:`O primeiro passo é coletar dados confiáveis. Perguntas essenciais: Qual é a cidade/UF? Qual o consumo dos últimos 12 meses? Existe conta de energia disponível? A instalação é monofásica, bifásica ou trifásica? Qual é a tensão? Há aumento de consumo previsto? Qual é o tipo de telhado/área disponível? Há sombreamento? O objetivo é reduzir a conta, atender uma carga específica, usar bateria ou combinar objetivos? Com esses dados a VsnS pode montar o estudo.`},
-
-{keys:["12 meses","doze meses","historico de consumo","histórico de consumo","consumos mensais"],
-answer:`Quando os 12 meses estão disponíveis, o ideal é analisar mês a mês em vez de usar apenas uma fatura. Isso permite calcular média, identificar sazonalidade, perceber meses atípicos e verificar tendência de crescimento ou redução. Também é importante confirmar se todos os valores estão na mesma unidade e se houve mudança relevante na instalação durante o período.`},
-
-{keys:["media","média","media mensal","média mensal","tirar a media","tirar a média","calcular a média"],
-answer:`A média mensal simples é obtida somando os consumos dos meses analisados e dividindo pela quantidade de meses. Exemplo: se houver 12 meses, soma-se o consumo dos 12 meses e divide-se por 12. A média é uma referência; não deve ser usada isoladamente quando existe forte sazonalidade, mudança de carga ou previsão de crescimento.`},
-
-{keys:["consumo","consumo mensal","kwh","conta de energia","fatura de energia"],
-answer:`O consumo em kWh é uma das principais entradas do dimensionamento. A VsnS deve observar o histórico, não apenas o valor de uma única fatura. Também deve verificar geração/compensação já existente, alterações de carga, sazonalidade, modalidade tarifária e possíveis aumentos futuros.`},
-
-{keys:["crescimento","aumento de consumo","consumo futuro","previsao de consumo","previsão de consumo"],
-answer:`Se o cliente pretende instalar ar-condicionado, bomba, aquecedor, carregador de veículo, piscina, máquinas ou outras cargas, isso deve ser considerado antes de fechar o dimensionamento. A carga futura pode ser estimada separadamente e incorporada ao consumo de projeto, sempre deixando claro o que é consumo medido e o que é projeção.`},
-
-{keys:["hsp","horas de sol","horas de sol pleno","irradiacao","irradiação","recurso solar"],
-answer:`HSP (Horas de Sol Pleno) é uma forma de representar a energia solar diária equivalente em kWh/m²/dia. Para um projeto real, a HSP deve ser obtida para a localização e o período de análise em uma fonte solar confiável. Não é correto usar uma HSP única para todo o Brasil.`},
-
-{keys:["potencia do sistema","potência do sistema","kwp","kwp necessario","kwp necessário"],
-answer:`Uma estimativa simplificada pode relacionar o consumo diário ao recurso solar e ao rendimento global do sistema. Conceitualmente: potência FV ≈ consumo diário ÷ (HSP × rendimento global). Para um projeto real, o resultado deve ser refinado considerando orientação, inclinação, temperatura, sombreamento, perdas, disponibilidade, perfil mensal e características dos equipamentos.`},
-
-{keys:["modulos","módulos","placas","painéis","painel solar","quantas placas","quantos módulos"],
-answer:`A quantidade de módulos depende da potência FV desejada e da potência de cada módulo. Uma estimativa é potência do sistema ÷ potência unitária do módulo, arredondando para uma quantidade inteira compatível com o projeto. Depois é necessário validar área, strings, tensão, corrente, MPPTs, orientação, sombreamento e limites do inversor.`},
-
-{keys:["potencia do modulo","potência do módulo","placa de 550","modulo de 550","módulo de 550"],
-answer:`A potência do módulo é usada para converter a potência desejada do gerador em quantidade de módulos. Exemplo conceitual: 6,6 kWp com módulos de 550 Wp exigiria 12 módulos, porque 12 × 550 Wp = 6,6 kWp. A quantidade final ainda precisa ser compatível com o inversor e o arranjo elétrico.`},
-
-{keys:["inversor","inversores","escolher inversor","dimensionar inversor"],
-answer:`Para escolher o inversor, a VsnS deve verificar potência AC, faixa de tensão MPPT, tensão máxima de entrada, corrente máxima por MPPT, quantidade de MPPTs, número de entradas, tensão de partida, eficiência, relação DC/AC, ambiente de instalação, comunicação e requisitos da distribuidora. Sempre conferir a ficha técnica do modelo específico.`},
-
-{keys:["dc ac","dc/ac","oversizing","sobredimensionamento","relação dc ac","relação dc/ac"],
-answer:`A relação DC/AC compara a potência instalada dos módulos com a potência nominal AC do inversor. Um gerador DC maior que a potência AC pode ser usado dentro dos limites especificados pelo fabricante. O grau adequado depende do projeto, clima, orientação, perfil de geração, perdas e limites elétricos; não deve ser definido por uma porcentagem universal.`},
-
-{keys:["string","strings","mppt","dimensionar string","dimensionar strings"],
-answer:`O arranjo das strings precisa respeitar os limites do inversor. A tensão de operação deve permanecer dentro da faixa MPPT, e a tensão de circuito aberto deve permanecer abaixo da tensão máxima de entrada, considerando a variação de temperatura. A corrente das strings em paralelo também precisa respeitar os limites do MPPT. A quantidade de módulos por string depende das tensões do módulo e do inversor.`},
-
-{keys:["voc","vmp","isc","imp","tensao de circuito aberto","tensão de circuito aberto","corrente de curto circuito"],
-answer:`Voc é a tensão de circuito aberto; Vmp é a tensão no ponto de máxima potência; Isc é a corrente de curto-circuito; Imp é a corrente no ponto de máxima potência. Esses valores da ficha técnica são fundamentais para verificar compatibilidade entre módulos, strings e inversor. A temperatura altera principalmente as tensões, portanto a condição de temperatura mínima e máxima do projeto precisa ser considerada.`},
-
-{keys:["temperatura","temperatura minima","temperatura máxima","coeficiente de temperatura"],
-answer:`A temperatura influencia a tensão dos módulos. Em condições frias, a tensão de circuito aberto pode aumentar; em condições quentes, a tensão de operação tende a cair. O projeto deve usar os coeficientes de temperatura informados pelo fabricante e verificar os extremos relevantes para a instalação.`},
-
-{keys:["sombreamento","sombra","sombras"],
-answer:`Sombreamento pode reduzir a produção e causar perdas desiguais entre módulos. A análise deve considerar obstáculos, horário, época do ano, orientação, distância entre fileiras e arquitetura elétrica. Recursos como múltiplos MPPTs, módulos com eletrônica própria ou microinversores podem ajudar em determinadas situações, mas não eliminam a necessidade de analisar o local.`},
-
-{keys:["orientacao","orientação","azimute","norte","sul","leste","oeste","inclinação","inclinacao"],
-answer:`Orientação e inclinação influenciam a geração. No Brasil, o norte costuma ser uma referência para maximizar a produção anual, mas telhados voltados para outras direções podem ser tecnicamente viáveis. A decisão deve considerar geração anual e mensal, perfil de consumo, área disponível, estrutura e sombreamento.`},
-
-{keys:["telhado","area","área","espaco","espaço","quantos metros"],
-answer:`A área disponível deve ser medida e comparada com as dimensões reais dos módulos. Também devem ser considerados obstáculos, afastamentos, corredores, acesso para manutenção, estrutura e disposição das strings. Não basta calcular apenas a área geométrica dos módulos.`},
-
-{keys:["geracao","geração","producao","produção","quanto gera","energia gerada"],
-answer:`Uma estimativa simplificada de geração usa potência instalada, recurso solar, período e rendimento global. Para uma previsão mensal confiável, é necessário considerar localização, orientação, inclinação, temperatura, perdas, sombreamento e disponibilidade. A geração real pode variar por clima e condições do sistema.`},
-
-{keys:["perdas","perdas do sistema","performance ratio","rendimento","rendimento global"],
-answer:`As perdas podem envolver temperatura, sujeira, mismatch, cabos CC/CA, conversão do inversor, indisponibilidade, sombreamento, conexões e outras características do sistema. O ideal é identificar as perdas relevantes do projeto em vez de aplicar uma porcentagem fixa sem justificativa.`},
-
-{keys:["cabo","cabos","dimensionar cabo","queda de tensao","queda de tensão"],
-answer:`O dimensionamento dos cabos deve considerar corrente, comprimento, método de instalação, temperatura, capacidade de condução, agrupamento e queda de tensão. Os circuitos CC e CA devem ser analisados separadamente. A seção final precisa respeitar normas aplicáveis e características do projeto.`},
-
-{keys:["disjuntor","dps","protecao","proteção","string box","seccionador","fusivel","fusível"],
-answer:`As proteções dependem da arquitetura do sistema e dos equipamentos. É necessário avaliar seccionamento, proteção contra sobrecorrente quando aplicável, proteção contra surtos, aterramento/equipotencialização e demais requisitos do projeto. Os valores devem ser definidos a partir das características reais dos circuitos e das normas e instruções aplicáveis.`},
-
-{keys:["aterramento","equipotencializacao","equipotencialização","spda"],
-answer:`O projeto deve avaliar aterramento, equipotencialização, integração com SPDA quando existente e proteção contra surtos conforme as características da instalação e normas aplicáveis. Não se deve presumir que um único esquema serve para todas as instalações.`},
-
-{keys:["bateria","baterias","hibrido","híbrido","backup","autonomia"],
-answer:`Em sistemas com bateria, o dimensionamento deve começar pelas cargas que precisam ser atendidas, potência instantânea, energia diária dessas cargas, autonomia desejada e estratégia de operação. Depois são avaliados capacidade útil, profundidade de descarga, eficiência, potência de carga/descarga, tensão do banco e compatibilidade com o inversor. Bateria não deve ser dimensionada apenas pelo consumo mensal total.`},
-
-{keys:["off grid","isolado","autonomo","autônomo"],
-answer:`Em sistemas isolados, o dimensionamento precisa considerar consumo diário, picos de potência, dias de autonomia, recurso solar, período crítico, bateria, controlador/inversor, perdas e margem de segurança. O projeto é diferente de um sistema conectado à rede e deve ser tratado como tal.`},
-
-{keys:["on grid","grid tie","conectado a rede","conectado à rede"],
-answer:`No sistema conectado à rede, a energia é produzida pelo gerador FV e o inversor opera em conjunto com a rede conforme a arquitetura aprovada. O projeto precisa atender às características da unidade consumidora, equipamentos certificados e requisitos da distribuidora.`},
-
-{keys:["homologacao","homologação","concessionaria","concessionária","distribuidora","acesso","projeto de homologação"],
-answer:`A homologação depende da distribuidora, da unidade consumidora e da modalidade do sistema. A VsnS deve consultar os requisitos técnicos vigentes da distribuidora, preparar documentação e verificar potência, proteção, padrão de entrada e demais informações exigidas. Regras regulatórias podem mudar, então a etapa final deve usar documentação vigente.`},
-
-{keys:["bifasico","bifásico","monofasico","monofásico","trifasico","trifásico","tensao","tensão"],
-answer:`O tipo de fornecimento e a tensão da unidade influenciam o projeto elétrico e a escolha/configuração do inversor. A VsnS deve identificar a configuração real da unidade antes de recomendar equipamentos ou arranjos.`},
-
-{keys:["demanda","demanda contratada","grupo a","grupo b","tarifa"],
-answer:`Em instalações com características tarifárias específicas, especialmente consumidores com demanda contratada, o estudo precisa considerar demanda, modalidade tarifária, perfil horário e regras aplicáveis. Não se deve tratar todas as unidades como se fossem iguais.`},
-
-{keys:["carregador","carro eletrico","carro elétrico","ar condicionado","bomba","piscina","aquecedor"],
-answer:`Cargas novas ou de maior potência devem entrar na projeção de consumo. Para cargas específicas, é útil estimar potência, horas de uso, dias por mês e sazonalidade. Depois isso pode ser convertido em energia mensal estimada e incorporado ao estudo de crescimento.`},
-
-{keys:["expansao","expansão","aumentar o sistema","futuro","ampliar"],
-answer:`Quando existe possibilidade de expansão, é importante verificar desde o início área disponível, estrutura, capacidade do inversor, limites de MPPT, cabos, proteções e condições da conexão. Planejar a expansão pode evitar retrabalho, mas não significa instalar equipamentos maiores sem verificar os limites do projeto.`},
-
-{keys:["checklist","lista de dados","dados do cliente","o que pedir ao cliente"],
-answer:`Checklist inicial: cidade/UF; conta de energia; consumo dos últimos 12 meses; tipo de fornecimento e tensão; modalidade tarifária quando relevante; aumento de consumo previsto; tipo e área do telhado; orientação/inclinação; sombreamento; fotos/vistoria; estrutura; objetivo do sistema; necessidade de bateria; e informações do padrão de entrada. Depois vêm os dados dos equipamentos e do local para o dimensionamento elétrico.`},
-
-{keys:["conta","ler conta","leitura da conta","dados da conta"],
-answer:`Ao analisar uma conta de energia, a VsnS deve procurar unidade consumidora, período, consumo em kWh, número de dias, modalidade/tarifa, demanda quando aplicável, créditos/compensações quando existentes e outras informações relevantes. Para um dimensionamento robusto, o histórico de várias faturas é preferível a uma única conta.`}
-];
-
-function normalize(s){
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-
-function findAnswer(text){
-  const q=normalize(text);
-  let best=null,bestScore=0;
-  for(const item of KB){
-    let score=0;
-    for(const key of item.keys){
-      const k=normalize(key);
-      if(q.includes(k)){
-        score += Math.min(6, 1 + k.length/10);
-      }
-    }
-    if(score>bestScore){bestScore=score;best=item.answer;}
+const state = {
+  solarIntent: false,
+  collected: {
+    bill: false,
+    roof: false,
+    address: false
   }
-  if(bestScore>=1) return best;
-  return `Entendi. Essa pergunta faz parte do universo de dimensionamento, mas ainda não encontrei uma regra específica na minha base inicial.
+};
 
-Para responder corretamente, eu preciso identificar em que etapa estamos: consumo e média, recurso solar/HSP, potência do sistema, módulos, inversor, strings/MPPT, perdas, sombreamento, telhado, cabos/proteções, bateria, geração ou homologação.
-
-Esse é exatamente o tipo de resposta que vamos corrigir nos seus testes.`;
+function normalize(text){
+  return text.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .trim();
 }
 
 function esc(text){
@@ -178,17 +72,111 @@ function esc(text){
   return d.innerHTML;
 }
 
+function hasAny(text, terms){
+  return terms.some(term => text.includes(normalize(term)));
+}
+
+/*
+ * Reconhece a intenção de energia solar mesmo quando o usuário
+ * não usa exatamente as mesmas palavras do cérebro.
+ */
+function detectsSolarInterest(text){
+  const q = normalize(text);
+
+  const direct = [
+    "energia solar",
+    "sistema solar",
+    "sistema fotovoltaico",
+    "energia fotovoltaica",
+    "placas solares",
+    "placa solar",
+    "paineis solares",
+    "painel solar",
+    "colocar placas",
+    "colocar placa",
+    "fazer um sistema",
+    "comprar energia solar",
+    "comprar solar",
+    "orcamento solar",
+    "orçamento solar",
+    "projeto solar"
+  ];
+
+  const start = [
+    "por onde comeco",
+    "por onde começo",
+    "como comeco",
+    "como começo",
+    "nao sei por onde",
+    "não sei por onde",
+    "quero saber como",
+    "estou pensando em colocar"
+  ];
+
+  return hasAny(q, direct) || (hasAny(q, ["solar","fotovoltaico","fotovoltaica"]) && hasAny(q,start));
+}
+
+function solarFirstResponse(){
+  const missing = [];
+  if(!state.collected.bill) missing.push("a conta de energia em PDF ou uma foto nítida");
+  if(!state.collected.roof) missing.push("o tipo de telhado");
+  if(!state.collected.address) missing.push("o endereço do imóvel");
+
+  if(missing.length === 0){
+    return "Perfeito. Já tenho as informações iniciais. Agora posso seguir para a análise do consumo e do dimensionamento.";
+  }
+
+  return "Claro. Eu vou te ajudar desde o começo, sem precisar conhecer termos técnicos. " +
+    "Para iniciar, preciso de " + missing.join(", ") + ". " +
+    "Não precisa me passar latitude ou longitude: eu obtenho isso automaticamente pelo endereço.";
+}
+
+function answer(text){
+  const q = normalize(text);
+
+  if(detectsSolarInterest(q)){
+    state.solarIntent = true;
+    return solarFirstResponse();
+  }
+
+  if(state.solarIntent){
+    if(hasAny(q, ["telhado","ceramico","colonial","fibrocimento","zinco"])){
+      state.collected.roof = true;
+      return solarFirstResponse();
+    }
+
+    if(hasAny(q, ["rua ","avenida ","av. ","numero ","nº ","bairro ","tatuí","tatui","sao paulo","sp "])){
+      state.collected.address = true;
+      return solarFirstResponse();
+    }
+
+    if(hasAny(q, ["conta de energia","fatura","fatura de energia","conta de luz","12 meses","consumo"])){
+      state.collected.bill = true;
+      return solarFirstResponse();
+    }
+  }
+
+  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro"])){
+    return "Sim. Meu cérebro inicial está conectado ao site. Ele contém as regras da primeira etapa do VsnS, incluindo a forma de reconhecer a intenção de começar com energia solar e a sequência inicial de coleta de dados.";
+  }
+
+  return "Entendi. Pode me explicar com suas palavras o que você precisa. Se for sobre começar um projeto de energia solar, eu vou identificar a intenção e conduzir a conversa passo a passo.";
+}
+
 function sendMessage(){
   const input=document.getElementById("message");
   const chat=document.getElementById("chat");
   const text=input.value.trim();
   if(!text)return;
+
   chat.innerHTML += `<p class="msg"><span class="you">Você:</span> ${esc(text)}</p>`;
-  chat.innerHTML += `<p class="msg"><span class="ai">VsnS AI:</span> ${esc(findAnswer(text))}</p>`;
+  chat.innerHTML += `<p class="msg"><span class="ai">VsnS AI:</span> ${esc(answer(text))}</p>`;
+
   input.value="";
   input.focus();
   chat.scrollTop=chat.scrollHeight;
 }
+
 document.getElementById("message").addEventListener("keydown",e=>{
   if(e.key==="Enter")sendMessage();
 });
