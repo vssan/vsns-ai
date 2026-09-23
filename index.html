@@ -33,16 +33,22 @@ button:hover{opacity:.9}
   <div class="welcome">Olá! Eu sou a VsnS AI. Como posso ajudar?</div>
 
   <div class="chat" id="chat">
-    <p class="msg">👋 Meu cérebro inicial está carregado.</p>
-    <p class="msg">Pode conversar comigo de forma normal. Se você quiser começar um projeto de energia solar, vou primeiro entender o que você precisa e pedir somente os dados que faltarem.</p>
-  </div>
+</div>
 
   <div class="input-row">
     <input id="message" type="text" placeholder="Digite sua pergunta..." autocomplete="off">
     <button onclick="sendMessage()">Enviar</button>
   </div>
 
-  <div class="help">Exemplo: “Quero colocar energia solar, mas não sei por onde começar.”</div>
+  <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <label for="fileInput" style="display:inline-block;padding:11px 15px;border:1px solid #ccd3df;border-radius:12px;background:#fff;cursor:pointer;font-size:14px">
+      📎 Anexar conta de energia
+    </label>
+    <input id="fileInput" type="file" accept="image/*,.pdf,application/pdf" style="display:none">
+    <span id="fileStatus" style="font-size:13px;color:#667085"></span>
+  </div>
+
+  <div class="help">Você pode anexar uma foto ou PDF da conta de energia. Nesta etapa, o arquivo é apenas selecionado; a leitura automática será conectada na próxima etapa.</div>
   <div class="footer">Protótipo VsnS AI — primeira etapa do cérebro. Cálculos reais devem ser conferidos com dados do local, fabricantes, normas e requisitos da distribuidora.</div>
 </main>
 
@@ -131,9 +137,192 @@ function solarFirstResponse(){
     "Não precisa me passar latitude ou longitude: eu obtenho isso automaticamente pelo endereço.";
 }
 
-function answer(text){
+
+  // ============================================================
+  // VsnS AI — BASE DE CONHECIMENTO SOLAR/FOTOVOLTAICA
+  // Esta camada transforma perguntas comuns sobre energia solar
+  // em respostas técnicas estruturadas. A base pode ser ampliada
+  // progressivamente sem alterar a interface.
+  // ============================================================
+
+  const solarKnowledge = [
+    {
+      keys:["o que e energia solar","o que é energia solar","como funciona energia solar","como funciona o sistema solar"],
+      answer:"Energia solar fotovoltaica transforma a luz do Sol em eletricidade por meio dos módulos fotovoltaicos. Os módulos produzem energia em corrente contínua (CC), o inversor faz a conversão para corrente alternada (CA) e o sistema alimenta as cargas da instalação. Em sistemas conectados à rede, o excedente pode ser enviado à rede conforme as regras aplicáveis."
+    },
+    {
+      keys:["o que e painel solar","o que é painel solar","modulo fotovoltaico","módulo fotovoltaico","placa solar"],
+      answer:"O módulo fotovoltaico é formado por células que convertem a radiação solar em eletricidade. Sua potência é normalmente expressa em Wp. Para dimensionar um sistema não basta olhar apenas a potência do módulo: também são importantes Voc, Vmp, Isc, Imp, coeficientes de temperatura, dimensões, tecnologia, garantia, orientação, inclinação, sombreamento e características do inversor."
+    },
+    {
+      keys:["inversor","o que faz o inversor","para que serve o inversor"],
+      answer:"O inversor converte a energia CC produzida pelos módulos em CA para utilização pelas cargas e, em sistemas conectados à rede, sincroniza-se com a rede elétrica. A escolha depende da potência do sistema, tensão, corrente, número de MPPTs, faixa de tensão MPPT, tensão máxima CC, corrente máxima por entrada, número de strings e arquitetura do projeto."
+    },
+    {
+      keys:["on grid","ongrid","on-grid","conectado a rede","conectado à rede"],
+      answer:"No sistema on-grid, os módulos e o inversor trabalham conectados à rede elétrica. Durante a geração, a energia atende primeiro as cargas instantâneas; o excedente pode ser exportado para a rede conforme o sistema de compensação aplicável. Quando a geração solar é insuficiente, a unidade consome energia da rede."
+    },
+    {
+      keys:["off grid","offgrid","off-grid","isolado"],
+      answer:"No sistema off-grid, a instalação não depende da rede elétrica para funcionar. Normalmente utiliza módulos, controlador/inversor apropriado e baterias. O dimensionamento precisa considerar consumo, potência das cargas, autonomia desejada, recurso solar, profundidade de descarga, eficiência e características das baterias."
+    },
+    {
+      keys:["hibrido","híbrido","sistema híbrido","bateria","baterias"],
+      answer:"Um sistema híbrido combina geração solar com armazenamento e, dependendo da arquitetura, rede elétrica e/ou gerador. Pode priorizar cargas, carregar baterias com solar e utilizar a rede quando necessário. Para projetar corretamente é preciso definir quais cargas terão backup, potência simultânea, autonomia, energia diária e estratégia de operação."
+    },
+    {
+      keys:["mppt","o que e mppt","o que é mppt"],
+      answer:"MPPT significa Maximum Power Point Tracking. É o rastreamento do ponto de máxima potência do arranjo fotovoltaico. O inversor ajusta sua operação para buscar a combinação de tensão e corrente que produz maior potência naquele momento. Strings com orientações ou condições muito diferentes normalmente devem ser analisadas separadamente e, quando aplicável, conectadas a MPPTs distintos."
+    },
+    {
+      keys:["voc","vmp","isc","imp","tensao de circuito aberto","tensão de circuito aberto","corrente de curto circuito","corrente de curto-circuito"],
+      answer:"Voc é a tensão de circuito aberto; Vmp é a tensão no ponto de máxima potência; Isc é a corrente de curto-circuito; Imp é a corrente no ponto de máxima potência. Esses valores são fundamentais para verificar se uma string respeita a tensão máxima do inversor, permanece dentro da faixa MPPT e respeita os limites de corrente."
+    },
+    {
+      keys:["string","strings","quantos paineis em serie","quantos painéis em série","ligacao em serie","ligação em série"],
+      answer:"Ao ligar módulos em série, as tensões se somam e a corrente permanece aproximadamente a mesma. O número de módulos por string deve ser calculado considerando Voc e Vmp, principalmente em temperaturas extremas, além da tensão máxima e da faixa MPPT do inversor. Não é seguro definir a quantidade apenas dividindo a potência."
+    },
+    {
+      keys:["ligacao paralelo","ligação paralelo","modulos em paralelo","módulos em paralelo"],
+      answer:"Em paralelo, as correntes dos circuitos se somam e a tensão permanece aproximadamente a mesma. O projeto deve respeitar os limites de corrente das entradas/MPPTs e as regras de proteção, cabos, conectores e dispositivos de seccionamento."
+    },
+    {
+      keys:["temperatura modulo","temperatura do modulo","coeficiente de temperatura","calor reduz geração"],
+      answer:"A temperatura elevada normalmente reduz a tensão de operação do módulo e pode reduzir sua potência. Por isso, o projeto deve considerar os coeficientes de temperatura informados pelo fabricante. Em temperaturas baixas, o Voc pode aumentar, o que é especialmente importante para verificar a tensão máxima da string."
+    },
+    {
+      keys:["sombreamento","sombra","sombra no painel","painel sombreado"],
+      answer:"Sombreamento reduz a geração e pode afetar uma string inteira dependendo da arquitetura e do local da sombra. Chaminés, árvores, caixas-d'água, platibandas e prédios vizinhos devem ser analisados. Em situações específicas, diferentes orientações ou eletrônica por módulo podem reduzir perdas, mas a solução depende do projeto."
+    },
+    {
+      keys:["orientacao","orientação","norte","sul","leste","oeste","inclinacao","inclinação"],
+      answer:"Orientação e inclinação influenciam a energia anual e também o horário em que a geração acontece. No Brasil, a orientação mais favorável para maximizar a geração anual frequentemente é próxima do norte geográfico, mas telhados leste/oeste podem ser tecnicamente adequados e podem distribuir melhor a geração ao longo do dia. A melhor configuração depende da localização, consumo, sombreamento e geometria do telhado."
+    },
+    {
+      keys:["irradiacao","irradiação","irradiancia","irradiância","hsp","horas de sol pico"],
+      answer:"Irradiação solar é a energia solar recebida por área em determinado período, enquanto irradiância é uma potência por área. A HSP (Horas de Sol Pico) é uma forma prática de representar a energia solar diária equivalente a 1 kW/m². Para um dimensionamento real, o recurso solar deve ser associado à localização do sistema e às perdas previstas."
+    },
+    {
+      keys:["geracao","geração","quanto gera um painel","quanto gera uma placa","geracao mensal","geração mensal"],
+      answer:"A geração depende da potência do módulo, recurso solar do local, orientação, inclinação, temperatura, sombreamento, sujeira, perdas elétricas, eficiência do inversor e disponibilidade. Uma aproximação inicial é potência instalada × recurso solar equivalente × desempenho global, mas um projeto real deve usar dados do local e perdas coerentes."
+    },
+    {
+      keys:["dimensionamento","dimensionar","quantas placas","quantos paineis","quantos painéis","quantidade de modulos","quantidade de módulos"],
+      answer:"Para dimensionar um sistema, primeiro é preciso conhecer o consumo e o perfil de uso, depois o recurso solar do local, a arquitetura do sistema, características do telhado e perdas. A potência necessária não deve ser calculada somente dividindo o consumo por um número fixo de geração: localização e condições do projeto alteram o resultado."
+    },
+    {
+      keys:["zero grid","zero-grid","sem injecao","sem injeção","não injetar","nao injetar"],
+      answer:"Zero Grid é uma estratégia de controle para evitar ou limitar a exportação de energia para a rede. O sistema precisa medir o fluxo no ponto de conexão e ajustar a geração conforme a carga, usando a arquitetura e os equipamentos compatíveis. O dimensionamento deve considerar o perfil horário de consumo, não apenas o consumo mensal."
+    },
+    {
+      keys:["clipping","oversizing","sobredimensionamento","potencia dc ac","potência dc ac"],
+      answer:"Oversizing é instalar uma potência CC de módulos maior que a potência nominal CA do inversor dentro dos limites permitidos pelo fabricante e pelo projeto. Isso pode aumentar a utilização do inversor em períodos de irradiância menor, mas o limite de potência, tensão, corrente e as condições de garantia devem ser respeitados. Clipping é a limitação da potência CA quando a potência CC disponível supera a capacidade do inversor."
+    },
+    {
+      keys:["bateria lfp","lifepo4","bateria de litio","bateria de lítio","profundidade de descarga","dod","estado de carga","soc"],
+      answer:"Baterias LiFePO4 são uma tecnologia de lítio bastante usada em armazenamento estacionário. SOC indica o estado de carga e DoD a profundidade de descarga. O dimensionamento deve considerar energia utilizável, potência de carga/descarga, autonomia, temperatura, limites do fabricante, eficiência e estratégia de operação."
+    },
+    {
+      keys:["backup","carga critica","cargas criticas","cargas críticas","falta de energia","queda de energia"],
+      answer:"Para backup, primeiro se define quais cargas precisam continuar funcionando. Depois se calcula a potência simultânea e a energia necessária durante a autonomia. Motores, bombas, compressores e outros equipamentos podem exigir potência de partida elevada, que deve ser considerada na especificação do inversor e da bateria."
+    },
+    {
+      keys:["degradacao","degradação","vida util painel","vida útil painel","garantia modulo","garantia módulo"],
+      answer:"Módulos fotovoltaicos apresentam degradação ao longo do tempo. A taxa e as condições dependem da tecnologia e do fabricante. É importante diferenciar garantia de produto, que trata de defeitos do equipamento, da garantia de desempenho, que estabelece condições de potência ao longo do período definido pelo fabricante."
+    },
+    {
+      keys:["limpeza","limpar painel","sujeira","manutencao","manutenção"],
+      answer:"A necessidade de limpeza depende de poeira, poluição, folhas, fezes de aves, inclinação e chuva. A manutenção deve seguir as orientações do fabricante e incluir inspeção visual, conexões, cabos, estrutura, inversor e proteções. A limpeza deve ser feita com procedimento seguro para não danificar o módulo nem expor pessoas a risco elétrico."
+    },
+    {
+      keys:["seguranca","segurança","incendio","incêndio","choque","arco eletrico","arco elétrico","protecoes","proteções"],
+      answer:"Sistemas fotovoltaicos envolvem tensão CC e CA e exigem projeto, instalação e manutenção adequados. Proteções, seccionamento, aterramento, equipotencialização, proteção contra surtos e demais requisitos devem ser definidos conforme a arquitetura, normas aplicáveis, fabricante e requisitos da distribuidora. Nunca se deve tratar um circuito CC energizado como se fosse uma instalação sem risco."
+    },
+    {
+      keys:["aterramento","equipotencializacao","equipotencialização","spda","dps","disjuntor","fusivel","fusível"],
+      answer:"A proteção elétrica de um sistema fotovoltaico deve ser dimensionada conforme a arquitetura e as características da instalação. Aterramento e equipotencialização, DPS, seccionamento, proteção contra sobrecorrente e demais dispositivos dependem do sistema e das normas aplicáveis. Não existe um único conjunto de proteções que sirva para todos os projetos."
+    },
+    {
+      keys:["cabo solar","cabos","bitola","queda de tensao","queda de tensão"],
+      answer:"A seção dos cabos deve ser definida considerando corrente, capacidade de condução, temperatura, agrupamento, método de instalação, distância e queda de tensão, além dos requisitos aplicáveis. No lado CC, também é necessário utilizar cabos e conectores apropriados para aplicação fotovoltaica."
+    },
+    {
+      keys:["conector mc4","mc4","conectores"],
+      answer:"Conectores fotovoltaicos devem ser compatíveis entre si e adequados à aplicação. Não é recomendável misturar conectores de fabricantes ou modelos diferentes apenas porque parecem mecanicamente compatíveis. O procedimento de crimpagem e montagem deve seguir as especificações do fabricante."
+    },
+    {
+      keys:["bifacial","modulo bifacial","módulo bifacial"],
+      answer:"Módulos bifaciais podem gerar energia pela face traseira quando há radiação disponível. O ganho depende do albedo, altura do módulo, espaçamento, geometria, sombreamento e condições do local. Portanto, o ganho bifacial não deve ser tratado como uma porcentagem fixa para todos os projetos."
+    },
+    {
+      keys:["microgeracao","microgeração","minigeracao","minigeração"],
+      answer:"No Brasil, a ANEEL informa que microgeração distribuída é a central geradora com potência instalada até 75 kW. Minigeração é acima de 75 kW e até 3 MW, podendo chegar a 5 MW em situações previstas na Lei 14.300/2022. O enquadramento e as regras aplicáveis devem ser verificados para o caso concreto."
+    },
+    {
+      keys:["lei 14300","lei 14.300","marco legal","scee","sistema de compensacao","sistema de compensação"],
+      answer:"A Lei 14.300/2022 instituiu o marco legal da micro e minigeração distribuída e o Sistema de Compensação de Energia Elétrica (SCEE). As regras de compensação e transição dependem do enquadramento da unidade, da data e das condições aplicáveis ao projeto. Para uma análise de faturamento ou homologação, é importante conferir a regulamentação vigente da ANEEL e as regras da distribuidora."
+    },
+    {
+      keys:["custo de disponibilidade","grupo b","grupo a","demanda contratada"],
+      answer:"Para unidades do Grupo B, a ANEEL informa que mesmo com geração distribuída pode existir cobrança referente ao custo de disponibilidade, equivalente a 30 kWh para ligação monofásica, 50 kWh para bifásica e 100 kWh para trifásica. Para Grupo A, a estrutura tarifária inclui demanda contratada, que deve ser analisada separadamente."
+    },
+    {
+      keys:["homologacao","homologação","aprovar sistema","aprovação distribuidora","projeto na distribuidora"],
+      answer:"A conexão de geração distribuída envolve documentação e procedimentos definidos pela distribuidora e pela regulamentação aplicável. O projeto deve respeitar os requisitos técnicos da distribuidora, da ANEEL e dos equipamentos. Os documentos e etapas podem variar conforme a distribuidora, nível de tensão, potência e características do sistema."
+    },
+    {
+      keys:["inmetro","registro inmetro","registro do equipamento","equipamento registrado"],
+      answer:"No Brasil, o Inmetro informa que a regulamentação atual para equipamentos fotovoltaicos abrange, entre outros, módulos, controladores, baterias e inversores até 75 kW, conforme o escopo definido pelas normas vigentes. Para produtos sujeitos a registro compulsório, a comercialização regular exige os procedimentos de conformidade, registro e etiquetagem aplicáveis."
+    },
+    {
+      keys:["economia","economizar","economia na conta","payback","retorno","roi"],
+      answer:"A economia de um sistema solar depende da energia gerada e autoconsumida, energia compensada, tarifa, estrutura tarifária, regras do SCEE, custos fixos, financiamento, manutenção e degradação. Payback é apenas um indicador financeiro; o cálculo deve usar fluxo de caixa e premissas explícitas, evitando promessas de economia fixa."
+    },
+    {
+      keys:["manutencao inversor","manutenção inversor","inversor aquecendo","inversor quente","inversor desligando"],
+      answer:"Aquecimento, desligamentos e alarmes podem ter diversas causas: temperatura ambiente, ventilação, excesso de corrente, tensão fora da faixa, falhas de rede, sujeira, conexões ou configuração. O código do alarme e o modelo do inversor são essenciais para uma análise correta. Não é seguro concluir a causa apenas pelo sintoma."
+    },
+    {
+      keys:["goodwe","fronius","solis","growatt","huawei","sungrow","deye"],
+      answer:"Posso explicar características, arquiteturas e diferenças técnicas entre fabricantes e modelos de inversores e baterias. Para uma comparação específica, preciso do modelo exato, porque limites de tensão, corrente, MPPT, comunicação, bateria compatível e funções podem mudar entre versões."
+    },
+    {
+      keys:["tarifa","kwh","kw","kwp","kwh mes","kwh mês"],
+      answer:"kW é unidade de potência; kWh é unidade de energia. kWp é a potência nominal de pico do campo fotovoltaico em condições de ensaio. Uma conta de energia é normalmente analisada em kWh, enquanto o sistema fotovoltaico é descrito em kWp e a capacidade do inversor em kW."
+    },
+    {
+      keys:["stc","noct","condicoes de teste","condições de teste"],
+      answer:"STC (Standard Test Conditions) é a condição de referência usada para especificar a potência nominal dos módulos. NOCT é uma condição de operação de referência diferente, usada para representar condições mais próximas da operação real. A potência nominal de placa não significa que o módulo produzirá esse valor continuamente em campo."
+    },
+    {
+      keys:["painel quebrado","vidro quebrado","microfissura","hotspot","ponto quente"],
+      answer:"Vidro quebrado, delaminação, microfissuras, hotspots e danos em células podem reduzir desempenho e criar riscos. O diagnóstico deve considerar inspeção visual, dados do inversor e, quando necessário, testes apropriados como termografia ou eletroluminescência realizados por profissional qualificado."
+    }
+  ];
+
+  function findSolarKnowledge(q){
+    const text = normalize(q);
+    let best = null;
+    let bestScore = 0;
+
+    for(const item of solarKnowledge){
+      let score = 0;
+      for(const key of item.keys){
+        const k = normalize(key);
+        if(text.includes(k)) score += k.length >= 8 ? 3 : 1;
+      }
+      if(score > bestScore){
+        bestScore = score;
+        best = item;
+      }
+    }
+    return bestScore > 0 ? best : null;
+  }
+
+  function answer(text){
   const q = normalize(text);
 
+  // 1) Primeiro trata a coleta para projetos de energia solar.
   if(detectsSolarInterest(q)){
     state.solarIntent = true;
     return solarFirstResponse();
@@ -156,11 +345,19 @@ function answer(text){
     }
   }
 
-  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro"])){
-    return "Sim. Meu cérebro inicial está conectado ao site. Ele contém as regras da primeira etapa do VsnS, incluindo a forma de reconhecer a intenção de começar com energia solar e a sequência inicial de coleta de dados.";
+  // 2) Responde perguntas técnicas usando a base solar.
+  const solarAnswer = findSolarKnowledge(q);
+  if(solarAnswer){
+    return solarAnswer.answer;
   }
 
-  return "Entendi. Pode me explicar com suas palavras o que você precisa. Se for sobre começar um projeto de energia solar, eu vou identificar a intenção e conduzir a conversa passo a passo.";
+  // 3) Pergunta sobre o próprio cérebro.
+  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro"])){
+    return "Sim. Meu cérebro VsnS está conectado ao site e possui uma base inicial de conhecimento sobre energia solar e sistemas fotovoltaicos. Posso responder perguntas técnicas, comerciais e de projeto e, quando uma informação depender de dados atuais ou específicos, a resposta deve ser verificada na fonte correspondente.";
+  }
+
+  // 4) Fallback neutro: não inventar uma resposta técnica.
+  return "Consigo analisar essa pergunta, mas ela não encontrou um assunto específico na minha base solar atual. Se você me disser o modelo do equipamento, o local, o consumo ou o contexto do projeto, consigo direcionar melhor a resposta.";
 }
 
 function sendMessage(){
@@ -179,6 +376,31 @@ function sendMessage(){
 
 document.getElementById("message").addEventListener("keydown",e=>{
   if(e.key==="Enter")sendMessage();
+});
+
+document.getElementById("fileInput").addEventListener("change", function(){
+  const status = document.getElementById("fileStatus");
+  const file = this.files && this.files[0];
+
+  if(!file){
+    status.textContent = "";
+    return;
+  }
+
+  const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const isImage = file.type.startsWith("image/");
+
+  if(!isPdf && !isImage){
+    status.textContent = "Formato não suportado. Use uma foto ou PDF.";
+    this.value = "";
+    return;
+  }
+
+  status.textContent = "Arquivo selecionado: " + file.name;
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML += `<p class="msg"><span class="ai">VsnS AI:</span> Recebi o arquivo <b>${esc(file.name)}</b>. A leitura automática da conta será a próxima etapa.</p>`;
+  chat.scrollTop = chat.scrollHeight;
 });
 </script>
 </body>
