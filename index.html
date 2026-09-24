@@ -48,7 +48,7 @@ button:hover{opacity:.9}
     <span id="fileStatus" style="font-size:13px;color:#667085"></span>
   </div>
 
-  <div class="help">Você pode anexar uma foto ou PDF da conta de energia. Nesta etapa, o arquivo é apenas selecionado; a leitura automática será conectada na próxima etapa.</div>
+  <div class="help">Você pode anexar uma foto ou PDF da conta de energia. Você pode anexar uma foto ou PDF da conta de energia. A leitura automática será adicionada na próxima etapa.</div>
   <div class="footer">Protótipo VsnS AI — primeira etapa do cérebro. Cálculos reais devem ser conferidos com dados do local, fabricantes, normas e requisitos da distribuidora.</div>
 </main>
 
@@ -58,10 +58,12 @@ button:hover{opacity:.9}
 <script>
 const state = {
   solarIntent: false,
+  intent: null,
   collected: {
     bill: false,
     roof: false,
-    address: false
+    address: false,
+    consumption: false
   }
 };
 
@@ -89,52 +91,49 @@ function hasAny(text, terms){
 function detectsSolarInterest(text){
   const q = normalize(text);
 
-  const direct = [
-    "energia solar",
-    "sistema solar",
-    "sistema fotovoltaico",
-    "energia fotovoltaica",
-    "placas solares",
-    "placa solar",
-    "paineis solares",
-    "painel solar",
-    "colocar placas",
-    "colocar placa",
-    "fazer um sistema",
-    "comprar energia solar",
-    "comprar solar",
-    "orcamento solar",
-    "orçamento solar",
-    "projeto solar"
+  const purchase = [
+    "comprar sistema solar","comprar energia solar","comprar placas","comprar painel",
+    "quero comprar","quero instalar","quero colocar energia solar","quero colocar solar",
+    "quero colocar placas","quero colocar painel","quero fazer um sistema",
+    "fazer orçamento","fazer orcamento","pedir orçamento","pedir orcamento",
+    "quero um orçamento","quero um orcamento","quanto custa energia solar",
+    "quanto custa um sistema solar","preço do sistema solar","preco do sistema solar",
+    "como faço pra comprar","como faco pra comprar","como comprar",
+    "como instalar energia solar","como começo meu projeto","como comeco meu projeto"
+  ];
+
+  const project = [
+    "energia solar","sistema solar","sistema fotovoltaico","energia fotovoltaica",
+    "placas solares","placa solar","paineis solares","painel solar",
+    "projeto solar","orcamento solar","orçamento solar","fotovoltaico"
   ];
 
   const start = [
-    "por onde comeco",
-    "por onde começo",
-    "como comeco",
-    "como começo",
-    "nao sei por onde",
-    "não sei por onde",
-    "quero saber como",
-    "estou pensando em colocar"
+    "por onde comeco","por onde começo","como comeco","como começo",
+    "nao sei por onde","não sei por onde","quero saber como",
+    "estou pensando em colocar","tenho interesse","quero saber sobre",
+    "quero colocar","quero fazer","preciso de um sistema"
   ];
 
-  return hasAny(q, direct) || (hasAny(q, ["solar","fotovoltaico","fotovoltaica"]) && hasAny(q,start));
+  return hasAny(q, purchase) || (hasAny(q, project) && hasAny(q, start));
 }
 
 function solarFirstResponse(){
   const missing = [];
-  if(!state.collected.bill) missing.push("a conta de energia em PDF ou uma foto nítida");
+  if(!state.collected.bill) missing.push("sua conta de energia em PDF ou uma foto nítida");
   if(!state.collected.roof) missing.push("o tipo de telhado");
   if(!state.collected.address) missing.push("o endereço do imóvel");
 
   if(missing.length === 0){
-    return "Perfeito. Já tenho as informações iniciais. Agora posso seguir para a análise do consumo e do dimensionamento.";
+    return "Perfeito! Já tenho as informações iniciais. Agora posso seguir para a análise do consumo e do dimensionamento.";
   }
 
-  return "Claro. Eu vou te ajudar desde o começo, sem precisar conhecer termos técnicos. " +
-    "Para iniciar, preciso de " + missing.join(", ") + ". " +
-    "Não precisa me passar latitude ou longitude: eu obtenho isso automaticamente pelo endereço.";
+  if(!state.collected.bill && !state.collected.roof && !state.collected.address){
+    return "Claro! Eu posso te ajudar a comprar e dimensionar seu sistema solar. Não precisa entender de termos técnicos. Para começar, me envie sua conta de energia em PDF ou uma foto nítida. Depois vou precisar do endereço do imóvel e do tipo de telhado.";
+  }
+
+  return "Perfeito! Já registrei o que você me passou. Para continuar, ainda preciso de " +
+    missing.join(", ") + ". Não precisa me passar latitude ou longitude: eu obtenho isso automaticamente pelo endereço.";
 }
 
 
@@ -322,14 +321,16 @@ function solarFirstResponse(){
   function answer(text){
   const q = normalize(text);
 
-  // 1) Primeiro trata a coleta para projetos de energia solar.
+  // 1) Detecta intenção de compra/projeto antes da base técnica.
   if(detectsSolarInterest(q)){
     state.solarIntent = true;
+    state.intent = "solar_project";
     return solarFirstResponse();
   }
 
+  // 2) Continua uma conversa de projeto já iniciada.
   if(state.solarIntent){
-    if(hasAny(q, ["telhado","ceramico","colonial","fibrocimento","zinco"])){
+    if(hasAny(q, ["telhado","ceramico","cerâmico","colonial","fibrocimento","zinco","metalico","metálico","laje","telha"])){
       state.collected.roof = true;
       return solarFirstResponse();
     }
@@ -339,25 +340,35 @@ function solarFirstResponse(){
       return solarFirstResponse();
     }
 
-    if(hasAny(q, ["conta de energia","fatura","fatura de energia","conta de luz","12 meses","consumo"])){
+    if(hasAny(q, ["conta de energia","fatura","fatura de energia","conta de luz","12 meses","consumo","kwh"])){
       state.collected.bill = true;
+      state.collected.consumption = true;
       return solarFirstResponse();
     }
   }
 
-  // 2) Responde perguntas técnicas usando a base solar.
+  // 3) Perguntas técnicas continuam funcionando normalmente.
   const solarAnswer = findSolarKnowledge(q);
   if(solarAnswer){
     return solarAnswer.answer;
   }
 
-  // 3) Pergunta sobre o próprio cérebro.
-  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro"])){
-    return "Sim. Meu cérebro VsnS está conectado ao site e possui uma base inicial de conhecimento sobre energia solar e sistemas fotovoltaicos. Posso responder perguntas técnicas, comerciais e de projeto e, quando uma informação depender de dados atuais ou específicos, a resposta deve ser verificada na fonte correspondente.";
+  // 4) Perguntas sobre o próprio VsnS.
+  if(hasAny(q, ["vc ja tem cerebro","você já tem cérebro","tem cerebro","tem cérebro","seu cerebro","seu cérebro"])){
+    return "Sim. Meu cérebro VsnS está conectado ao site e possui uma base de conhecimento sobre energia solar e sistemas fotovoltaicos. Posso conversar sobre compra, projeto, dimensionamento e dúvidas técnicas.";
   }
 
-  // 4) Fallback neutro: não inventar uma resposta técnica.
-  return "Consigo analisar essa pergunta, mas ela não encontrou um assunto específico na minha base solar atual. Se você me disser o modelo do equipamento, o local, o consumo ou o contexto do projeto, consigo direcionar melhor a resposta.";
+  // 5) Conversas comerciais comuns.
+  if(hasAny(q, ["oi","ola","olá","bom dia","boa tarde","boa noite"])){
+    return "Olá! 👋 Sou a VsnS AI. Posso te ajudar com energia solar, orçamento, dimensionamento, equipamentos, baterias e dúvidas técnicas. O que você gostaria de saber?";
+  }
+
+  if(hasAny(q, ["obrigado","obrigada","valeu","agradecido","agradecida"])){
+    return "Por nada! 😊 Se quiser, podemos continuar seu projeto solar ou tirar outra dúvida.";
+  }
+
+  // 6) Fallback sem inventar.
+  return "Posso te ajudar com energia solar, desde a compra e orçamento até o dimensionamento e dúvidas sobre equipamentos. Me conte o que você precisa fazer ou saber.";
 }
 
 function sendMessage(){
